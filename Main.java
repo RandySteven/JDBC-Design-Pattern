@@ -1,5 +1,6 @@
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
 
@@ -17,23 +18,39 @@ public class Main {
 	String query;
 	String userName, userPosition;
 	int id;
+	UserFactory uf = new UserFactory();
 	
+	/**
+	 * View procedure in main method
+	 * This procedure will call method view() of UserFactory()
+	 */
 	void view() {
-		query = new UserFactory().view();
+		uf.view(conn);
+	}
+	
+	/**
+	 * Delete procedure in main method
+	 * This procedure will call delete method of UserFactory()
+	 */
+	void delete() {
+		view();
+		System.out.print("Select user that you want to delete by id : ");input=scan.nextInt();scan.nextLine();
 		try {
-			Statement st = conn.createStatement();
-			ResultSet rs = st.executeQuery(query);
-			while(rs.next()) {
-				System.out.println("Name : " + rs.getString(2));
-				System.out.println("Email : " + rs.getString(3));
-				System.out.println("Position : " + rs.getString(5));
-				System.out.println("==========================================");
+			boolean destroy = uf.deleteUser(input, conn);
+			if(destroy) {
+				System.out.println("Success to delete ");
+			}else {
+				System.out.println("Record not found");
 			}
-		} catch (Exception e) {
-			System.err.println(e.getMessage());
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
+	/**
+	 * Main menu after user login
+	 */
 	void menu() {
 		do {
 			System.out.println("Welcome : " + userName);
@@ -50,7 +67,10 @@ public class Main {
 				view();
 				break;
 			case 2:
-				
+		
+				break;
+			case 3:
+				delete();
 				break;
 			default:
 				mainMenu();
@@ -60,6 +80,54 @@ public class Main {
 		} while (input!=0);		
 	}
 	
+	/*
+	 * Login
+	 * */
+	
+	void login() {
+		System.out.print("Input email : ");email=scan.nextLine();
+		System.out.print("Input password : ");password=scan.nextLine();
+		try {
+			ResultSet rs = uf.login(email, password, conn);
+			if(rs.next()) {
+				id = rs.getInt(1);
+				userName = rs.getString(2);
+				userPosition = rs.getString(5);
+				menu();
+			}else {
+				System.out.println("User not found");
+			}
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+		}
+	}
+	
+	/* Register*/
+	void register() {
+		System.out.print("Input name : ");name=scan.nextLine();
+		System.out.print("Input email : ");email=scan.nextLine();
+		System.out.print("Input password : ");password=scan.nextLine();
+		System.out.print("Choose role [1. Premium | 2. Gold] : ");choose=scan.nextInt();scan.nextLine();
+		
+		if(choose == 1) {
+			user = uf.createPremium(name, email, password);
+		}else {
+			user = uf.createGold(name, email, password);
+		}
+		
+		try {
+			boolean create = uf.createUser(user, conn);
+			if(create == true) {
+				System.out.println("Success create user");
+			}
+		} catch (Exception e) {
+			System.err.println(e.getMessage());
+		}
+	}
+	
+	/**
+	 * Register and Login menu
+	 * */
 	void mainMenu() {
 		do {
 			System.out.println("1. Login");
@@ -70,45 +138,11 @@ public class Main {
 			switch (input) {
 			
 			case 1:
-				System.out.print("Input email : ");email=scan.nextLine();
-				System.out.print("Input password : ");password=scan.nextLine();
-				query = new UserFactory().login(email, password);
-				try {
-					Statement st = conn.createStatement();
-					ResultSet rs = st.executeQuery(query);
-					if(rs.next()) {
-						id = rs.getInt(1);
-						userName = rs.getString(2);
-						userPosition = rs.getString(5);
-						menu();
-					}else {
-						System.out.println("User not found");
-					}
-				} catch (Exception e) {
-					System.out.println(e.getMessage());
-				}
+				login();
 				break;
-			
+				
 			case 2:
-				System.out.print("Input name : ");name=scan.nextLine();
-				System.out.print("Input email : ");email=scan.nextLine();
-				System.out.print("Input password : ");password=scan.nextLine();
-				System.out.print("Choose role [1. Premium | 2. Gold] : ");choose=scan.nextInt();scan.nextLine();
-				
-				if(choose == 1) {
-					user = new UserFactory().createPremium(name, email, password);
-				}else {
-					user = new UserFactory().createGold(name, email, password);
-				}
-				
-				try {
-					query = new UserFactory().createUser(user);
-					Statement st = conn.createStatement();
-					st.execute(query);
-				} catch (Exception e) {
-					System.err.println(e.getMessage());
-				}
-					// TODO: handle exception
+				register();
 				break;
 				
 			default:
